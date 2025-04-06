@@ -15,7 +15,9 @@ const allowedOrigins = [
   'http://localhost:5173',
   'https://your-netlify-app.netlify.app',
   'https://*.netlify.app',
-  'https://67f29a1f244950c1ab9fe775--thriving-rolypoly-a9b123.netlify.app/'
+  'https://67f29a1f244950c1ab9fe775--thriving-rolypoly-a9b123.netlify.app/',
+  'https://gravity-x-1.pages.dev/',
+  ''
 ];
 
 app.use(cors({
