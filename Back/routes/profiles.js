@@ -84,7 +84,7 @@ router.post('/add', limiter, upload.single('image'), async (req, res) => {
     });
     await profile.save();
 
-    const token = jwt.sign({ id: profile._id, name: profile.name }, process.env.JWT_SECRET, { expiresIn: '1h' });
+    const token = jwt.sign({ id: profile._id, name: profile.name }, process.env.JWT_SECRET, { expiresIn: '30d' });
     res.json({ profile: { ...profile._doc, password: undefined }, token });
   } catch (err) {
     console.error('Add Profile Error:', err.message);
@@ -104,7 +104,7 @@ router.post('/login', async (req, res) => {
     const isMatch = await bcrypt.compare(password, profile.password);
     if (!isMatch) return res.status(401).json({ error: 'Invalid name or password' });
 
-    const token = jwt.sign({ id: profile._id, name: profile.name }, process.env.JWT_SECRET, { expiresIn: '1h' });
+    const token = jwt.sign({ id: profile._id, name: profile.name }, process.env.JWT_SECRET, { expiresIn: '30d' });
     res.json({ profile: { ...profile._doc, password: undefined }, token });
   } catch (err) {
     console.error('Login Error:', err.message);
