@@ -18,7 +18,7 @@ const allowedOrigins = [
   'https://67f29a1f244950c1ab9fe775--thriving-rolypoly-a9b123.netlify.app/',
   'https://gravity-x-1.pages.dev/',
   'https://gravity-x.pages.dev/',
-  ''
+  'https://gravity-x.netlify.app/',
 ];
 
 app.use(cors({
