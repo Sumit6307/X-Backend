@@ -19,6 +19,7 @@ const allowedOrigins = [
   'https://gravity-x-1.pages.dev/',
   'https://gravity-x.pages.dev/',
   'https://gravity-x.netlify.app/',
+  ''
 ];
 
 app.use(cors({
