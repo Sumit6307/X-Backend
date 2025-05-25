@@ -27,26 +27,18 @@ const limiter = rateLimit({
 const authenticate = async (req, res, next) => {
   try {
     const token = req.header('Authorization')?.replace('Bearer ', '');
-    if (!token) {
-      return res.status(401).json({ error: 'Authentication required' });
-    }
+    if (!token) return res.status(401).json({ error: 'Authentication required' });
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const profile = await Profile.findOne({ _id: decoded.id, name: decoded.name });
-    if (!profile) {
-      return res.status(401).json({ error: 'Profile not found' });
-    }
+    if (!profile) return res.status(401).json({ error: 'Profile not found' });
 
     req.profile = profile;
     req.token = token;
     next();
   } catch (err) {
-    if (err.name === 'TokenExpiredError') {
-      return res.status(401).json({ error: 'Token expired' });
-    }
-    if (err.name === 'JsonWebTokenError') {
-      return res.status(401).json({ error: 'Invalid token' });
-    }
+    if (err.name === 'TokenExpiredError') return res.status(401).json({ error: 'Token expired' });
+    if (err.name === 'JsonWebTokenError') return res.status(401).json({ error: 'Invalid token' });
     res.status(401).json({ error: 'Authentication failed' });
   }
 };
@@ -61,7 +53,7 @@ router.post('/add', limiter, upload.single('image'), async (req, res) => {
     if (existingProfile) return res.status(400).json({ error: 'Profile name already exists' });
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    let imageUrl = '';
+    let imageUrl = 'https://img.freepik.com/premium-vector/vector-flat-illustration-grayscale-avatar-user-profile-person-icon-gender-neutral-silhouette-profile-picture-suitable-social-media-profiles-icons-screensavers-as-templatex9xa_719432-2210.jpg?semt=ais_hybrid';
     if (req.file) {
       const result = await new Promise((resolve, reject) => {
         cloudinary.uploader.upload_stream({ resource_type: 'image' }, (error, result) => {
@@ -71,6 +63,16 @@ router.post('/add', limiter, upload.single('image'), async (req, res) => {
       });
       imageUrl = result.secure_url;
     }
+    console.log('Creating profile with imageUrl:', imageUrl);
+
+    let parsedProjects = [];
+    if (projects) {
+      parsedProjects = JSON.parse(projects);
+      if (!Array.isArray(parsedProjects)) throw new Error('Projects must be an array');
+      for (const project of parsedProjects) {
+        if (!project.title) return res.status(400).json({ error: 'Project title is required' });
+      }
+    }
 
     const profile = new Profile({
       name,
@@ -79,8 +81,8 @@ router.post('/add', limiter, upload.single('image'), async (req, res) => {
       skills: skills ? skills.split(',').map(s => s.trim()) : [],
       socialLinks: socialLinks ? JSON.parse(socialLinks) : {},
       location,
-      imageUrl: imageUrl || 'https://via.placeholder.com/150',
-      projects: projects ? JSON.parse(projects) : [],
+      imageUrl,
+      projects: parsedProjects,
     });
     await profile.save();
 
@@ -124,16 +126,15 @@ router.get('/me', authenticate, async (req, res) => {
     res.status(500).json({ error: 'Server error' });
   }
 });
-// Edit Profile (requires authentication)
+
+// Edit Profile
 router.put('/edit/:id', authenticate, limiter, upload.single('image'), async (req, res) => {
   try {
     const { id } = req.params;
-    if (req.profile._id.toString() !== id) {
-      return res.status(403).json({ error: 'Unauthorized to edit this profile' });
-    }
+    if (req.profile._id.toString() !== id) return res.status(403).json({ error: 'Unauthorized to edit this profile' });
 
     const { bio, skills, socialLinks, location, projects } = req.body;
-    let imageUrl = req.profile.imageUrl;
+    let imageUrl = req.profile.imageUrl || 'https://img.freepik.com/premium-vector/vector-flat-illustration-grayscale-avatar-user-profile-person-icon-gender-neutral-silhouette-profile-picture-suitable-social-media-profiles-icons-screensavers-as-templatex9xa_719432-2210.jpg?semt=ais_hybrid';
     
     if (req.file) {
       const result = await new Promise((resolve, reject) => {
@@ -144,6 +145,16 @@ router.put('/edit/:id', authenticate, limiter, upload.single('image'), async (re
       });
       imageUrl = result.secure_url;
     }
+    console.log('Editing profile with imageUrl:', imageUrl);
+
+    let parsedProjects = req.profile.projects;
+    if (projects) {
+      parsedProjects = JSON.parse(projects);
+      if (!Array.isArray(parsedProjects)) throw new Error('Projects must be an array');
+      for (const project of parsedProjects) {
+        if (!project.title) return res.status(400).json({ error: 'Project title is required' });
+      }
+    }
 
     const updatedProfile = await Profile.findByIdAndUpdate(id, {
       bio,
@@ -151,7 +162,7 @@ router.put('/edit/:id', authenticate, limiter, upload.single('image'), async (re
       socialLinks: socialLinks ? JSON.parse(socialLinks) : req.profile.socialLinks,
       location,
       imageUrl,
-      projects: projects ? JSON.parse(projects) : req.profile.projects,
+      projects: parsedProjects,
       updatedAt: Date.now(),
     }, { new: true });
 
@@ -168,9 +179,7 @@ router.put('/edit/:id', authenticate, limiter, upload.single('image'), async (re
 // Get Single Profile
 router.get('/:id', async (req, res) => {
   try {
-    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-      return res.status(400).json({ error: 'Invalid profile ID' });
-    }
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ error: 'Invalid profile ID' });
 
     const profile = await Profile.findById(req.params.id).select('-password');
     if (!profile) return res.status(404).json({ error: 'Profile not found' });

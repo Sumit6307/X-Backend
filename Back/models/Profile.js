@@ -1,4 +1,3 @@
-// models/Profile.js
 const mongoose = require('mongoose');
 
 const profileSchema = new mongoose.Schema({
@@ -13,7 +12,10 @@ const profileSchema = new mongoose.Schema({
     instagram: String,
   },
   location: { type: String, index: true },
-  imageUrl: String,
+  imageUrl: { 
+    type: String, 
+    default: 'https://img.freepik.com/premium-vector/vector-flat-illustration-grayscale-avatar-user-profile-person-icon-gender-neutral-silhouette-profile-picture-suitable-social-media-profiles-icons-screensavers-as-templatex9xa_719432-2210.jpg?semt=ais_hybrid' 
+  },
   projects: [{
     title: { type: String, required: true },
     description: String,
@@ -26,5 +28,11 @@ const profileSchema = new mongoose.Schema({
 });
 
 profileSchema.index({ name: 'text', skills: 'text', location: 'text' });
+
+// Update updatedAt on save
+profileSchema.pre('save', function(next) {
+  this.updatedAt = Date.now();
+  next();
+});
 
 module.exports = mongoose.model('Profile', profileSchema);
